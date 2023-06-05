@@ -1,0 +1,28 @@
+- name: Backup FortiGate Configuration
+  hosts: firewall
+  connection: httpapi
+  collections:
+  - fortinet.fortios
+  vars:
+    vdom: "root"
+    ansible_httpapi_use_ssl: yes
+    ansible_httpapi_validate_certs: no
+    ansible_httpapi_port: 
+  tasks:
+    - name: Backup a virtual domain.
+      fortios_monitor_fact:
+         selector: 'system_config_backup'
+         vdom: 'root'
+         access_token: ""
+         params:
+             scope: 'global'
+      register: backupinfo
+
+    - name: Get current date and time
+      set_fact:
+        timestamp: "{{ ansible_date_time.date }}_{{ ansible_date_time.time }}"
+
+    - name: Save the backup information.
+      copy:
+         content: '{{ backupinfo.meta.raw }}'
+         dest: '/tmp/hl-fw-py_backup_{{ timestamp }}.conf'
