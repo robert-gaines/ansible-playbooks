@@ -1,0 +1,25 @@
+- name: Patch Windows Servers and Send Email
+  hosts: windows_servers
+  gather_facts: true
+  vars:
+    ansible_python_interpreter: C:\\Users\\{insert user account}\\AppData\\Local\\Programs\\Python\\Python311\\python.exe
+  tasks:
+    - name: Check for available updates
+      win_updates:
+        category_names: SecurityUpdates
+        state: searched
+      register: win_updates_result
+
+    - name: Install available updates
+      win_updates:
+        category_names: SecurityUpdates
+        state: installed
+      when: win_updates_result.updates | length > 0
+      register: win_updates_install_result
+
+    - name: Set current date and time
+      set_fact:
+        timestamp: "{{ ansible_date_time.date }}_{{ ansible_date_time.time }}"
+
+    - name: Send email with patching results
+      win_command: powershell.exe -Command Send-MailMessage -From '' -To '' -Subject 'Patching Results for Windows Servers - {{ timestamp }}' -Body 'Patching completed on Windows Servers at {{ timestamp }}' -SmtpServer '' -Port 25 -UseSSL:$false
