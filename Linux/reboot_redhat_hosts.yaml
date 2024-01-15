@@ -1,0 +1,34 @@
+---
+- name: Reboot (ARM) Linux Servers
+  hosts: redhat_hosts
+  become: yes  # Run tasks with sudo (root) privileges
+  gather_facts: true
+  vars:
+    smtp_relay_host: "10.128.10.21"
+    smtp_relay_port: 25
+    smtp_sender: "ansible@internal.subterfuge.biz"
+    smtp_recipient: "robert.gaines@internal.subterfuge.biz"
+  tasks:
+    - name: Reboot the servers
+      command: reboot
+      async: 0
+      poll: 0
+      ignore_errors: true
+
+    - name: Wait for servers to come back online
+      wait_for_connection:
+        timeout: 300  # Adjust the timeout as needed
+
+    - name: Set current date and time
+      set_fact:
+        timestamp: "{{ ansible_date_time.date }}_{{ ansible_date_time.time }}"
+
+    - name: Send email with update results
+      community.general.mail:
+        host: "{{ smtp_relay_host }}"
+        port: "{{ smtp_relay_port }}"
+        sender: "{{ smtp_sender }}"
+        to: "{{ smtp_recipient }}"
+        subject: "Redhat/Rocky Server Reboot Playbok Execution - {{ ansible_hostname }} -  {{ timestamp }}"
+        body: |
+          "Results: {{ ansible_hostname }} was rebooted at {{ timestamp }}"

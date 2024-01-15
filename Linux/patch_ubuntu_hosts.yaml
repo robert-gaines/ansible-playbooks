@@ -1,0 +1,41 @@
+---
+- name: Update Ubuntu Servers and Send Email
+  hosts: ubuntu_hosts
+  become: true
+  #become_method: sudo
+  #become_user: root
+  gather_facts: true
+  vars:
+    smtp_relay_host: "10.128.10.21"
+    smtp_relay_port: 25
+    smtp_sender: "ansible@internal.subterfuge.biz"
+    smtp_recipient: "robert.gaines@internal.subterfuge.biz"
+  tasks:
+    - name: Set server name as a variable
+      set_fact:
+        server_name: "{{ ansible_hostname }}"
+
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+
+    - name: Upgrade all packages
+      apt:
+        upgrade: yes
+        autoremove: yes
+        autoclean: yes
+        force_apt_get: yes
+
+    - name: Set current date and time
+      set_fact:
+        timestamp: "{{ ansible_date_time.date }}_{{ ansible_date_time.time }}"
+
+    - name: Send email with update results
+      community.general.mail:
+        host: "{{ smtp_relay_host }}"
+        port: "{{ smtp_relay_port }}"
+        sender: "{{ smtp_sender }}"
+        to: "{{ smtp_recipient }}"
+        subject: "Ubuntu Server Update - {{ timestamp }}"
+        body: "Ubuntu server {{ server_name }} has been successfully updated."
+

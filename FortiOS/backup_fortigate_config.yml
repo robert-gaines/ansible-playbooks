@@ -1,21 +1,25 @@
-- name: Backup FortiGate Configuration
-  hosts: firewall
+- hosts: firewalls
   connection: httpapi
   collections:
-  - fortinet.fortios
+    - fortinet.fortios
   vars:
     vdom: "root"
-    ansible_httpapi_use_ssl: yes
+    ansible_httpapi_use_ssl: true
     ansible_httpapi_validate_certs: no
-    ansible_httpapi_port: 
+    ansible_httpapi_port: 8443
+
   tasks:
+    - name: Include Ansible Vault Token Data
+      include_vars:
+        file: "/etc/ansible/vault/secret.yml"
+
     - name: Backup a virtual domain.
-      fortios_monitor_fact:
-         selector: 'system_config_backup'
-         vdom: 'root'
-         access_token: ""
-         params:
-             scope: 'global'
+      fortinet.fortios.fortios_monitor:
+        access_token: "{{ firewall_api_key }}"
+        selector: 'backup.system.config'
+        vdom: "{{ vdom }}"
+        params:
+          scope: 'global'
       register: backupinfo
 
     - name: Get current date and time
@@ -24,5 +28,5 @@
 
     - name: Save the backup information.
       copy:
-         content: '{{ backupinfo.meta.raw }}'
-         dest: '/tmp/hl-fw-py_backup_{{ timestamp }}.conf'
+        content: '{{ backupinfo.meta.raw }}'
+        dest: '/configs/res-phy-prd-fwp_backup_{{ timestamp }}.conf'
